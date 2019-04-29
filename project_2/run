@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# number of threads:
+for t in 1 2 4 6 8
+do
+    echo NUMT = $t
+    # number of trials
+    for s in 256 512 1024 2048 4096
+    do
+        echo NUMNODES $s
+        g++ -DNUMT=$t -DNUMNODES=$s proj.cpp -o proj -lm -fopenmp
+        ./proj
+    done
+done
