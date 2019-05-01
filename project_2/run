@@ -1,14 +1,19 @@
 #!/bin/bash
 
+outFile="results.txt"
+rm -f $outFile
+
 # number of threads:
+echo -e '\t8\t16\t32\t64\t128\t256\t512\t1024' >> $outFile
 for t in 1 2 4 6 8
 do
-    echo NUMT = $t
-    # number of trials
-    for s in 256 512 1024 2048 4096
+    # number of nodes
+    echo -e -n $t'\t' >> $outFile
+    # for s in 256 512 1024 2048 4096 8192 16384 32768
+    for s in 8 16 32 64 128 256 512 1024
     do
-        echo NUMNODES $s
         g++ -DNUMT=$t -DNUMNODES=$s proj.cpp -o proj -lm -fopenmp
         ./proj
     done
+    echo '' >> $outFile
 done

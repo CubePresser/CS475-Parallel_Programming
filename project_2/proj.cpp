@@ -1,3 +1,26 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <omp.h>
+
+// setting the number of threads:
+#ifndef NUMT
+#define NUMT		1
+#endif
+
+// how many tries to discover the maximum performance:
+#ifndef NUMTRIES
+#define NUMTRIES	1
+#endif
+
+// setting the number of nodes on a single bezier curve
+#ifndef NUMNODES
+#define NUMNODES	4096
+#endif
+
+#ifndef OUTFILE
+#define OUTFILE     "results.txt"
+#endif
+
 #define XMIN	 0.
 #define XMAX	 3.
 #define YMIN	 0.
@@ -47,8 +70,13 @@ float Height( int, int );
 
 int main( int argc, char *argv[ ] )
 {
-	// . . .
 
+    #ifndef _OPENMP
+        fprintf( stderr, "OpenMP is not supported here -- sorry.\n" );
+        return 1;
+    #endif
+
+    omp_set_num_threads( NUMT );
 	// the area of a single full-sized tile:
 
 	float fullTileArea = (  ( ( XMAX - XMIN )/(float)(NUMNODES-1) )  *
@@ -57,32 +85,51 @@ int main( int argc, char *argv[ ] )
 	// sum up the weighted heights into the variable "volume"
 	// using an OpenMP for loop and a reduction:
 
-	// TODO: ?????
-    #pragma omp parallel for default(none)
-    for( int i = 0; i < NUMNODES*NUMNODES; i++ )
-    {
-        int iu = i % NUMNODES;
-        int iv = i / NUMNODES;
+    float maxPerformance = 0.;
+    float bestVolume = 0.;
 
-        float height = Height(iu, iv);
+    for(int t = 0; t < NUMTRIES; t++) {
+        float volume = 0.0;
+        double time0 = omp_get_wtime();
 
-        iuEdge = (iu == NUMNODES - 1 || iu == 0)
-        ivEdge = (iv == NUMNODES - 1 || iv == 0)
-        // Corner tiles 1/4
-        if(iuEdge && ivEdge) {
+        #pragma omp parallel for default(none) reduction(+:volume)
+        for( int i = 0; i < NUMNODES*NUMNODES; i++ )
+        {
+            int iu = i % NUMNODES;
+            int iv = i / NUMNODES;
 
-        } 
-        // Edge tiles 1/2
-        else if (iuEdge || ivEdge) {
+            float height = Height(iu, iv);
 
-        } 
-        // Default tiles 1
-        else {
+            bool iuEdge = (iu == NUMNODES - 1 || iu == 0);
+            bool ivEdge = (iv == NUMNODES - 1 || iv == 0);
 
+            // Corner tiles 1/4
+            if(iuEdge && ivEdge) {
+                height *= 0.25;
+            } 
+            // Edge tiles 1/2
+            else if (iuEdge || ivEdge) {
+                height *= 0.5;
+            }
+
+            volume += height;
         }
 
-        // . . .
+        volume *= fullTileArea;
+
+        double time1 = omp_get_wtime();
+        double megaHeightsPerSecond = (double)(NUMNODES * NUMNODES) / (time1 - time0) / 1000000.;
+        if(megaHeightsPerSecond > maxPerformance) {
+            maxPerformance = megaHeightsPerSecond;
+            bestVolume = volume;
+        }
     }
+
+    printf("%d\t%d\t%f\t%f\n", NUMT, NUMNODES, bestVolume, maxPerformance);
+
+    FILE *f = fopen(OUTFILE, "a");
+    if(f) fprintf(f, "%f\t", maxPerformance);
+    else printf("Oops, bad file write.");
 }
 
 float
