@@ -1,0 +1,9 @@
+#!/bin/bash
+
+outFile="results.txt"
+rm -f $outFile
+
+echo -e '\tTemp(C)\tPrecip\tHeight\tNumDeer\tNumHumans' >> $outFile
+
+g++ proj.cpp -o proj -lm -fopenmp
+./proj
