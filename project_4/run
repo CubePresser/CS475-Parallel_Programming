@@ -1,0 +1,13 @@
+#!/bin/bash
+
+outFile="results.txt"
+rm -f $outFile
+
+echo -e '\tarr-mult\tarr-mult-red' >> $outFile
+for i in 1000 10000 100000 1000000 10000000
+do
+    echo -e -n $i'\t' >> $outFile
+    make clean
+    make ARRAYSIZE=$i
+    ./arraymult
+done
