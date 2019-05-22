@@ -1,0 +1,16 @@
+#!/bin/bash
+
+outFile="results-2.txt"
+rm -f $outFile
+
+echo -e '\tMegaMultReductionsPerSecond' >> $outFile
+for i in 1024 2048 4096 8192 16384 32768 65536 131072 262144 524288 1048576 2097152 4194304 8388608
+do 
+    echo -e -n $i'\t' >> $outFile
+    for t in 64 128 256
+    do
+        g++ -DLOCAL_SIZE=$t -DNMB=$i -o second second.cpp ./CL/libOpenCL.so -lm -fopenmp
+        ./second
+    done
+    echo '' >> $outFile
+done
